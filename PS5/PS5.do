@@ -17,17 +17,11 @@ u DinD_ex
 *`1. Use mean differences to compute the difference in means estimate of the change in minimum wage.
 
 gen njfte=nj*fte
-replace njfte=. if nj~=1
+replace njfte=. if nj==0
 
 ttest njfte, by(after)
 
-gen pa=0
-replace pa=1 if nj==0
-gen pafte=pa*fte
-replace pafte=. if nj==1
 
-
-ttest pafte, by(after) 
 
 /* New Jersey:
 Two-sample t test with equal variances
@@ -47,7 +41,16 @@ Ho: diff = 0                                     degrees of freedom =      566
     Ha: diff < 0                 Ha: diff != 0                 Ha: diff > 0
  Pr(T < t) = 0.3486         Pr(|T| > |t|) = 0.6971          Pr(T > t) = 0.6514
 
+*/
 
+gen pa=0
+replace pa=1 if nj==0
+gen pafte=pa*fte
+replace pafte=. if nj==1
+
+ttest pafte, by(after) 
+
+/*
 For pennsylvania:
 Two-sample t test with equal variances
 ------------------------------------------------------------------------------
@@ -76,8 +79,19 @@ standard errors is sizeable – why is this? */
 
 
 reg dfte nj
-
+outreg2 using q2.docx, replace
 reg dfte nj, robust
+outreg2 using q2.docx, append
+
+
+reg dfte njafter
+reg dfte njafter, robust
+
+
+
+
+
+
 
 *why is standard error sensitive? because you are interviewing the same restaurants twice, so you essentially have half the observations as regular OLS due to inter-class correlation. Also, heteroskedasticity? 
 
@@ -88,14 +102,15 @@ errors: one plain vanilla and one with the robust option. What is the coefficien
 interest? Do the standard error options make a difference. */
 
 reg fte nj njafter after // tstat: 1.34 
-
+outreg2 using q3.docx, replace
 reg fte nj njafter after, robust // t-stat in njafter  1.21 
+outreg2 using q3.docx, append
 
 /*4. Now estimate the levels model from question 3 but cluster on sheet. How do
 the standard errors change? */
 
 reg fte nj njafter after, cluster(sheet) // tstat 1.58
-
+outreg2 using q3.docx, append
 
 /* 5. Now estimate the levels model using fixed effects (i.e. xtreg). Which variables
 get dropped and why? */
@@ -103,6 +118,8 @@ get dropped and why? */
 xtset sheet after
 
 xtreg fte nj njafter after, fe
+outreg2 using q3.docx, append
+
 
 *New Jersey indicator gets dropped because it is time invariant. 
 
@@ -122,6 +139,9 @@ you think this picture contains useful information?*/
 
 * Q8
 
+clear all 
+global ps5 "/Users/amy/Dropbox/1. NYU Wagner/Fall 2016/AEM/PS5"
+cd "$ps5"
 clear all
 u  safesave_slim_data
 /*
@@ -138,13 +158,64 @@ gen lge=ge*loanbal
 bys monthyear: egen mean_ltika=mean(ltika)
 bys monthyear: egen mean_lge=mean(lge)
 
-line mean_ltika trend || line mean_lge trend, xline(13)
+line mean_ltika trend || line mean_lge trend, xline(13) ysc(r(0 1000)) ylabel(#5) xlabel(#11)
+
+twoway scatter mean_ltika trend || twoway scater mean_lge trend, xline(13) ysc(r(0 1000)) ylabel(#5) xlabel(#11)
+graph tw (scatter mean_ltika trend) || lfit mean_ltika trend
+
+gen diff=mean_ltika-mean_lge
+
+line diff trend, xline(13)
+
+scatter ltika trend || scatter lge trend, xline(13)
+
+* The post period is defined from February 2000 onward.
+gen post=0
+replace post=1 if trend>=13
+sum post
 
 
+ttest mean_ltika, by(post)
+ttest mean_lge, by(post)
+
+/*
+Now run a regression to provide a test of the parallel trend assumption in the preperiod
+(i.e., that the treatment and comparison branches have the same time trend
+before the interest rate change). While you’re at it, check whether within the
+comparison branches, either the intercept or slope changed when the interest changed.
+What is needed for the strategy to be valid? What do you find?
+*/
+
+gen trendpost=trend*post
+reg loanbal trend post trendpost if tika==1 // col1, table 2
+outreg2 using "q8.docx", replace 
+
+reg loanbal trend post trendpost if tika==0 // col2, table 2
+outreg2 using "q8.docx", append 
 
 
+*trendpost is significant for treated but not for control group. 
+*test  
+
+// add: Treatment × Post × Trend, Treatment × Post, Treatment × Trend
+gen tpt=tika*post*trend
+gen tp=tika*post 
+gen tt=tika*trend
+
+reg loanbal tika trend post trendpost tpt tp tt
+outreg2 using "q8.docx", append 
+ 
+reg loanbal tika trend post trendpost tpt tp tt nage tinpr
+outreg2 using "q8.docx", append
 
 
+/*
+Something you will notice is that the comparison and treatment branches have a
+different level of loan balances (i.e., intercept) pre-interest rate change. Is this
+problematic for the strategy? Does this change persist when you control for the
+variables tinpr and nage (time in program – the length of time the borrower has been
+with the bank – and nage, the age of the borrower)?
+*/
 
 
 
