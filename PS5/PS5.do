@@ -160,14 +160,12 @@ bys monthyear: egen mean_lge=mean(lge)
 
 line mean_ltika trend || line mean_lge trend, xline(13) ysc(r(0 1000)) ylabel(#5) xlabel(#11)
 
-twoway scatter mean_ltika trend || twoway scater mean_lge trend, xline(13) ysc(r(0 1000)) ylabel(#5) xlabel(#11)
 graph tw (scatter mean_ltika trend) || lfit mean_ltika trend
 
 gen diff=mean_ltika-mean_lge
 
 line diff trend, xline(13)
 
-scatter ltika trend || scatter lge trend, xline(13)
 
 * The post period is defined from February 2000 onward.
 gen post=0
@@ -194,6 +192,7 @@ reg loanbal trend post trendpost if tika==0 // col2, table 2
 outreg2 using "q8.docx", append 
 
 
+
 *trendpost is significant for treated but not for control group. 
 *test  
 
@@ -217,5 +216,9 @@ variables tinpr and nage (time in program – the length of time the borrower ha
 with the bank – and nage, the age of the borrower)?
 */
 
+reg loanbal trend nage tinpr if (tika==1 & post==0)
+outreg2 using "q8c.docx", replace  
 
+reg loanbal trend nage tinpr if (tika==0 & post==0)
+outreg2 using "q8c.docx", append
 
