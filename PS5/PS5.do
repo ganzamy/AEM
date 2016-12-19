@@ -9,7 +9,8 @@
 
 clear all 
 global ps5 "/Users/amy/Dropbox/1. NYU Wagner/Fall 2016/AEM/PS5"
-
+ 
+log using ps5log
 cd "$ps5"
 
 u DinD_ex
@@ -86,11 +87,6 @@ outreg2 using q2.docx, append
 
 reg dfte njafter
 reg dfte njafter, robust
-
-
-
-
-
 
 
 *why is standard error sensitive? because you are interviewing the same restaurants twice, so you essentially have half the observations as regular OLS due to inter-class correlation. Also, heteroskedasticity? 
@@ -221,4 +217,5 @@ outreg2 using "q8c.docx", replace
 
 reg loanbal trend nage tinpr if (tika==0 & post==0)
 outreg2 using "q8c.docx", append
+log close
 
